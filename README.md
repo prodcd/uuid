@@ -1,1 +1,2 @@
-IyB1dWlkCkEgbGlnaHR3ZWlnaHQgUEhQIGxpYnJhcnkgZm9yIGdlbmVyYXRpbmcgVVVJRHMgd2l0aCB6ZXJvLWRlcGVuZGVuY3kgYW5kIHN1cHBvcnQgZm9yIG11bHRpcGxlIGdlbmVyYXRpb24gbWV0aG9kcyAoUkZDNDEyMik=
+# uuid
+A lightweight PHP library for generating UUIDs with zero-dependency and support for multiple generation methods (RFC4122)
