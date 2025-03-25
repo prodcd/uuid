@@ -1,0 +1,16 @@
+{
+    "name": "prodcd/uuid",
+    "description": "UUID读写类",
+    "authors": [
+        {
+            "name": "prodcd",
+            "email": "prodcd@qq.com"
+        }
+    ],
+    "autoload": {
+        "files": [
+            "uuid.php"
+        ]
+    },
+    "minimum-stability": "stable"
+}
