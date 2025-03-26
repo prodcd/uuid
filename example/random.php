@@ -13,7 +13,7 @@ $startTime = microtime(true);
 $key = 123456;
 echo 'The key:' . $key .PHP_EOL;
 // 循环写入整数，uint32，用随机数来验证解密正确性
-for ($i = 0; $i < 1000; $i++) {
+for ($i = 0; $i < 10000; $i++) {
     $num = rand(0, 4294967295);
     $uuid = new uuid($key);
     $uuid->wUInt32($num); // 写入随机数

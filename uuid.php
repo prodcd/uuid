@@ -45,13 +45,16 @@ class uuid
      */
     private function generateCipherMap(int $key): void
     {
-        srand($key);
-        for ($i = 0; $i < 256; $i++) {
-            $map[$i] = $i;
-        }
+        $a = 1664525;
+        $c = 1013904223;
+        $m = pow(2, 32);
+        $seed = $key;
+
+        $map = range(0, 255);
 
         for ($i = 0; $i < 256; $i++) {
-            $rand = rand(0, 255);
+            $seed = ($a * $seed + $c) % $m;
+            $rand = $seed % 256;
             $temp = $map[$i];
             $map[$i] = $map[$rand];
             $map[$rand] = $temp;
