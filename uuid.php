@@ -45,21 +45,22 @@ class uuid
      */
     private function generateCipherMap(int $key): void
     {
-        $a = 1664525;
-        $c = 1013904223;
-        $m = pow(2, 32);
+        $a = 69069;
+        $c = 12345;
+        $m = 256;
         $seed = $key;
 
         $map = range(0, 255);
+        //var_dump($map);
 
         for ($i = 0; $i < 256; $i++) {
             $seed = ($a * $seed + $c) % $m;
-            $rand = $seed % 256;
+            //echo $seed . ',';
             $temp = $map[$i];
-            $map[$i] = $map[$rand];
-            $map[$rand] = $temp;
+            $map[$i] = $map[$seed];
+            $map[$seed] = $temp;
         }
-
+        //var_dump($map);
         $this->encryptMap = $map;
         $this->decryptMap = array_flip($map);
     }
@@ -586,6 +587,7 @@ class uuid
             }
             $shuffledData .= chr($byte);
         }
+        //echo 'bitShuffle:'.bin2hex($shuffledData).PHP_EOL;
         return $shuffledData;
     }
 
@@ -623,11 +625,12 @@ class uuid
      */
     private function extractBits(string $data): array
     {
-        $bitArray = [];
+        $bitArray = array_fill(0, self::UUID_LENGTH * 8, 0); // 初始化固定大小的数组
         for ($i = 0; $i < self::UUID_LENGTH; $i++) {
             $byte = ord($data[$i]);
             for ($j = 0; $j < 8; $j++) {
-                $bitArray[] = ($byte >> (7 - $j)) & 1;
+                $bitIndex = $i * 8 + $j; // 计算固定索引
+                $bitArray[$bitIndex] = ($byte >> (7 - $j)) & 1;
             }
         }
         return $bitArray;
@@ -640,9 +643,13 @@ class uuid
     {
         $data = $this->buffer;
         for ($i = 0; $i < $mapCount; $i++) {
+            var_dump(bin2hex($data));
             $data = $this->bitShuffle($data); // 位重排
+            var_dump(bin2hex($data));
             $data = $this->shift128Bits($data, $shiftAmount); // 位移
+            var_dump(bin2hex($data));
             $data = $this->cipherEncrypt($data); // 加密
+            var_dump(bin2hex($data));
         }
 
         $hexData = '';
