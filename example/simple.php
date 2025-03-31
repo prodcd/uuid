@@ -11,7 +11,7 @@ use prodcd\uuid;
 require '../uuid.php';
 // 记录开始时间
 $startTime = microtime(true);
-$key = 123456; // 加密和解密使用同一个key
+$key = "123456"; // 加密和解密使用同一个key
 echo 'The key:' . $key .PHP_EOL;
 // 创建UUID对象
 $uuid = new uuid($key);

@@ -21,13 +21,13 @@ for ($i = 0; $i < 10000; $i++) {
     $read = uuid::fromUuidString($key, $uuidString);
     $int32 = $read->rUInt32();
     if ($int32 !== $num) { // 如果读取的整数与写入的整数不一致，输出错误信息，并中断脚本执行
-        echo "写入的整数: $num UUID: $uuidString 读取整数：$int32<br />";
+        echo "写入的整数: $num UUID: $uuidString 读取整数：$int32\n";
         exit; 
     }
 
 }
 // 验证正确
-echo "验证正确<br />";
+echo "验证正确\n";
 // 记录结束时间
 $endTime = microtime(true);
 // 计算执行时间

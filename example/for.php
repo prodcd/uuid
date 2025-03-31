@@ -18,10 +18,12 @@ $uuid = new uuid($key);
 for ($i = 0; $i < 10; $i++) {
     $uuid->clean();
     $uuid->wInt8($i);
+    $uuid->wString("user:admin");
     $uuidString = $uuid->toUuidString();
     $read = uuid::fromUuidString($key, $uuidString);
     $int8 = $read->rInt8();
-    echo "Write an integer: $i, Get UUID: $uuidString, Read an integer: $int8" . PHP_EOL;
+    $str = $read->rString();
+    echo "Write an integer: $i, Get UUID: $uuidString, Read an integer: $int8, Read a string: $str" . PHP_EOL;
 }
 
 $key = 654321; // 更换key
@@ -29,10 +31,14 @@ echo "The key: $key" . PHP_EOL;
 for ($i = 0; $i < 10; $i++) {
     $uuid = new uuid($key);
     $uuid->wInt8($i);
+    $uuid->wString("user:guest");
     $uuidString = $uuid->toUuidString();
     $read = $uuid = uuid::fromUuidString($key, $uuidString);
     $int8 = $read->rInt8();
-    echo "Write an integer: $i, Get UUID: $uuidString, Read an integer: $int8" . PHP_EOL;
+    $str = $read->rString();
+    // 输出结果
+
+    echo "Write an integer: $i, Get UUID: $uuidString, Read an integer: $int8, Read a string: $str" . PHP_EOL;
 }
 
 // 记录结束时间

@@ -16,99 +16,98 @@ $startTime = microtime(true);
 $key = 123456; // 加密和解密使用同一个key
 echo 'The key:' . $key .PHP_EOL;
 // 写入整数和字符串示例
-echo "key: $key<br /><br />";
-echo "<strong>Write a integer and a string</strong><br />";
+echo "<strong>Write a integer and a string</strong>\n";
 $num = 12345;
 $str = "Hello, world!";
 $uuid = new uuid($key);
 $uuid->wInt16($num);
 echo "Write a integer:".$num;
 $uuid->wString("Hello, world!");
-echo ",and write a string:" . $str . "<br />";
+echo ",and write a string:" . $str . "\n";
 $uuidString = $uuid->toUuidString();
-echo "Get a UUID: $uuidString<br />";
+echo "Get a UUID: $uuidString\n";
 
 $read = uuid::fromUuidString($key, $uuidString);
 $int16 = $read->rInt16();
 $string = $read->rString();
-echo "Read a integer: $int16<br />";
-echo "Read a string: $string<br /><br />";
+echo "Read a integer: $int16\n";
+echo "Read a string: $string\n\n";
 
 // 写入浮点数与汉字示例
-echo "<strong>Write a float32 and a utf8 string</strong><br />";
+echo "<strong>Write a float32 and a utf8 string</strong>\n";
 $pi = 3.14159;
 $utf8 = "你好！";
 $uuid = new uuid($key);
 $uuid->wFloat32($pi);
-echo "Write a float32: $pi<br />";
+echo "Write a float32: $pi\n";
 $uuid->wString($utf8);
-echo "and write a utf8 string: $utf8<br />";
+echo "and write a utf8 string: $utf8\n";
 $uuidString = $uuid->toUuidString();
-echo "Get a UUID: $uuidString<br />";
+echo "Get a UUID: $uuidString\n";
 
 $read = uuid::fromUuidString($key, $uuidString);
 $float = $read->rFloat32();
 $string = $read->rString();
-echo "Read a float32: $float(accuracy loss)<br />";
-echo "Read a string: $string<br /><br />";
+echo "Read a float32: $float(accuracy loss)\n";
+echo "Read a string: $string\n\n";
 
 // 写入MAC地址与时间戳
-echo "<strong>Write a MAC address and a timestamp(microseconds)</strong><br />";
+echo "<strong>Write a MAC address and a timestamp(microseconds)</strong>\n";
 $mac = "00:11:22:33:44:55";
 $uuid = new uuid($key);
 $uuid->wMac($mac);
 echo "Write a MAC address: $mac";
 $uuid->wMicrotime();
-echo ",and write a timestamp(microseconds)<br />";
+echo ",and write a timestamp(microseconds)\n";
 
 $uuidString = $uuid->toUuidString();
-echo "Get a UUID: $uuidString<br />";
+echo "Get a UUID: $uuidString\n";
 
 $read = uuid::fromUuidString($key, $uuidString);
 $mac = $read->rMac();
 $timestamp = $read->rMicrotime();
-echo "Read a MAC address: $mac<br />";
-echo "Read a timestamp: $timestamp[0].$timestamp[1]<br />";
-echo "Read a timestamp: ". date("Y-m-d H:i:s", $timestamp[0]).".".$timestamp[1]. "<br />";
+echo "Read a MAC address: $mac\n";
+echo "Read a timestamp: $timestamp[0].$timestamp[1]\n";
+echo "Read a timestamp: ". date("Y-m-d H:i:s", $timestamp[0]).".".$timestamp[1]. "\n";
 $floatSTimestamp = $timestamp[0] + $timestamp[1] / 1000000;
-echo "Read a timestamp: $floatSTimestamp(accuracy loss)<br /><br />";
+echo "Read a timestamp: $floatSTimestamp(accuracy loss)\n\n";
 
 // 写入IPv4地址与时间戳
-echo "<strong>Write a IPv4 address and a timestamp</strong><br />";
-$ip = $_SERVER['REMOTE_ADDR'];
+echo "<strong>Write a IPv4 address and a timestamp</strong>\n";
+$ip = '127.0.0.1';
 $time = time();
 $uuid = new uuid($key);
 $uuid->wUInt32(ip2long($ip));
 echo "Write a IPv4 address: $ip";
 $uuid->wUInt32(time());
-echo ",and write a timestamp: $time<br />";
+echo ",and write a timestamp: $time\n";
 $uuidString = $uuid->toUuidString();
-echo "Get a UUID: $uuidString<br />";
+echo "Get a UUID: $uuidString\n";
 
 $read = uuid::fromUuidString($key, $uuidString);
 $ip = long2ip($read->rUInt32());
 $timestamp = $read->rUInt32();
-echo "Read a IPv4 address: $ip<br />";
-echo "Read a timestamp: $timestamp<br />";
-echo "Read a timestamp: ". date("Y-m-d H:i:s", $timestamp). "<br /><br />";
+echo "Read a IPv4 address: $ip\n";
+echo "Read a timestamp: $timestamp\n";
+echo "Read a timestamp: ". date("Y-m-d H:i:s", $timestamp). "\n\n";
 
 
 // 写入IPv6地址
-echo "<strong>Write a IPv6 address</strong><br />";
+echo "<strong>Write a IPv6 address</strong>\n";
 $ip = "ec81::e826:3eef:0:3ded";
 $uuid = new uuid($key);
 $uuid->wIPv6($ip);
-echo "Write a IPv6 address: $ip<br />";
+echo "Write a IPv6 address: $ip\n";
 $uuidString = $uuid->toUuidString();
-echo "Get a UUID: $uuidString<br />";
+echo "Get a UUID: $uuidString\n";
 
 $read = uuid::fromUuidString($key, $uuidString);
 $ip = $read->rIPv6();
-echo "Read a IPv6 address(toString=true): $ip<br />";
+echo "Read a IPv6 address(toString=true): $ip\n";
 
 $read = uuid::fromUuidString($key, $uuidString);
 $ip = bin2hex($read->rIPv6(false));
-echo "Read a IPv6 address(toString=false): $ip<br />";
+echo "Read a IPv6 address(toString=false): $ip\n";
 
 
 // 记录结束时间

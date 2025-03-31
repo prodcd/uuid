@@ -10,13 +10,10 @@ use InvalidArgumentException;
  */
 class uuid
 {
-    const CHUNK_SIZE = 4; // Process data in chunks of 4 bytes
-    public int $key; // 种子
+    public string $key; // 密码
+    private string $cipher = 'aes-128-ecb'; // 加密算法，无需IV
     // 偏移量
-    private int $currentOffset = 0;
-    // 加密映射表（256字节混淆）
-    private array $encryptMap = []; // 映射
-    private array $decryptMap = []; // 反映射
+    private int $currentOffset = 0;// 偏移量
 
     // 存储二进制数据
     private string $buffer;
@@ -26,43 +23,8 @@ class uuid
     // 构造函数，接收key参数
     public function __construct($key)
     {
-        $key = $key ?? 0;
-        $this->init($key);
-    }
-    /**
-     * 初始化加密映射表和缓冲区
-     * @param int $key 加密种子
-     */
-    private function init(int $key): void
-    {
-        $this->generateCipherMap($key); // 生成加密映射表
+        $this->key = $key; // 设置密码
         $this->buffer = str_repeat("\0", self::UUID_LENGTH); // 初始化缓冲区
-    }
-
-    /**
-     * 生成加密映射表（核心加密逻辑）
-     * @param int $key 加密种子
-     */
-    private function generateCipherMap(int $key): void
-    {
-        $a = 69069;
-        $c = 12345;
-        $m = 256;
-        $seed = $key;
-
-        $map = range(0, 255);
-        //var_dump($map);
-
-        for ($i = 0; $i < 256; $i++) {
-            $seed = ($a * $seed + $c) % $m;
-            //echo $seed . ',';
-            $temp = $map[$i];
-            $map[$i] = $map[$seed];
-            $map[$seed] = $temp;
-        }
-        //var_dump($map);
-        $this->encryptMap = $map;
-        $this->decryptMap = array_flip($map);
     }
 
     public function clean(): void
@@ -453,104 +415,6 @@ class uuid
         $this->currentOffset += $length;
         return $bytes;
     }
-    //------------------------ 加密核心方法 ------------------------
-
-    /**
-     * 加密二进制数据
-     * @param string $data 要加密的数据
-     * @return string 加密后的数据
-     * @throws InvalidArgumentException
-     */
-    private function cipherEncrypt(string $data): string
-    {
-        $encrypted = [];
-        $length = strlen($data);
-
-        for ($i = 0; $i < $length; $i += self::CHUNK_SIZE) {
-            $chunk = substr($data, $i, self::CHUNK_SIZE);
-            $paddedChunk = str_pad($chunk, self::CHUNK_SIZE, "\0");
-            $word = unpack('N', $paddedChunk)[1];
-
-            // 加密
-            for ($j = 0; $j < 8; $j++) {
-                $word = $this->byteSubstitution($word, $this->encryptMap);
-                $word = $this->leftRotate($word, 4);
-            }
-
-            $encrypted[] = $word;
-        }
-
-        return pack('N*', ...$encrypted);
-    }
-
-    /**
-     * 解密二进制数据
-     * @param string $data 要解密的数据
-     * @return string 解密后的数据
-     * @throws InvalidArgumentException
-     */
-    private function cipherDecrypt(string $data): string
-    {
-        $decrypted = [];
-        $length = strlen($data);
-
-        for ($i = 0; $i < $length; $i += self::CHUNK_SIZE) {
-            $chunk = substr($data, $i, self::CHUNK_SIZE);
-            $word = unpack('N', $chunk)[1];
-
-            // 解密
-            for ($j = 0; $j < 8; $j++) {
-                $word = $this->rightRotate($word, 4);
-                $word = $this->byteSubstitution($word, $this->decryptMap);
-            }
-
-            $decrypted[] = $word;
-        }
-
-        return pack('N*', ...$decrypted);
-    }
-
-    /**
-     * 字节替换
-     * @param int $word 单词
-     * @param array $map 替换映射
-     * @return int 替换后的单词
-     */
-    private function byteSubstitution(int $word, array $map): int
-    {
-        $bytes = [
-            ($word >> 24) & 0xFF,
-            ($word >> 16) & 0xFF,
-            ($word >> 8) & 0xFF,
-            $word & 0xFF
-        ];
-        $bytes = array_map(function ($b) use ($map) {
-            return $map[$b];
-        }, $bytes);
-        return ($bytes[0] << 24) | ($bytes[1] << 16) | ($bytes[2] << 8) | $bytes[3];
-    }
-
-    /**
-     * 左旋转
-     * @param int $word 单词
-     * @param int $amount 旋转位数
-     * @return int 旋转后的单词
-     */
-    private function leftRotate(int $word, int $amount): int
-    {
-        return (($word << $amount) | ($word >> (32 - $amount))) & 0xFFFFFFFF;
-    }
-
-    /**
-     * 右旋转
-     * @param int $word 单词
-     * @param int $amount 旋转位数
-     * @return int 旋转后的单词
-     */
-    private function rightRotate(int $word, int $amount): int
-    {
-        return (($word >> $amount) | ($word << (32 - $amount))) & 0xFFFFFFFF;
-    }
 
     //------------------------ 工具方法 ------------------------
 
@@ -566,160 +430,40 @@ class uuid
     }
 
     /**
-     * 位重排
-     * @param string $data 要逆向重排的数据
-     * @return string 逆向重排后的数据
-     */
-    private function bitShuffle(string $data): string
-    {
-        if (strlen($data) !== self::UUID_LENGTH) {
-            throw new InvalidArgumentException("Input data length must be exactly " . self::UUID_LENGTH . " bytes.");
-        }
-
-        $bitArray = $this->extractBits($data);
-
-        $shuffledData = '';
-        for ($i = 0; $i < self::UUID_LENGTH; $i++) {
-            $byte = 0;
-            for ($j = 0; $j < 8; $j++) {
-                $bitIndex = ($j * self::UUID_LENGTH) + $i;
-                $byte |= $bitArray[$bitIndex] << (7 - $j);
-            }
-            $shuffledData .= chr($byte);
-        }
-        //echo 'bitShuffle:'.bin2hex($shuffledData).PHP_EOL;
-        return $shuffledData;
-    }
-
-    /**
-     * 逆向位重排
-     * @param string $data 要逆向重排的数据
-     * @return string 逆向重排后的数据
-     * @throws InvalidArgumentException
-     */
-    private function bitUnshuffle(string $data): string
-    {
-        if (strlen($data) !== self::UUID_LENGTH) {
-            throw new InvalidArgumentException("Input data length must be exactly " . self::UUID_LENGTH . " bytes.");
-        }
-
-        $bitArray = $this->extractBits($data);
-
-        $unshuffledData = '';
-        for ($i = 0; $i < self::UUID_LENGTH; $i++) {
-            $byte = 0;
-            for ($j = 0; $j < 8; $j++) {
-                $bitIndex = ($i * 8) + $j;
-                $originalBitIndex = ($bitIndex % self::UUID_LENGTH) * 8 + intdiv($bitIndex, self::UUID_LENGTH);
-                $byte |= $bitArray[$originalBitIndex] << (7 - $j);
-            }
-            $unshuffledData .= chr($byte);
-        }
-        return $unshuffledData;
-    }
-
-    /**
-     * 提取字节中的所有位
-     * @param string $data 输入数据
-     * @return array 提取的位数组
-     */
-    private function extractBits(string $data): array
-    {
-        $bitArray = array_fill(0, self::UUID_LENGTH * 8, 0); // 初始化固定大小的数组
-        for ($i = 0; $i < self::UUID_LENGTH; $i++) {
-            $byte = ord($data[$i]);
-            for ($j = 0; $j < 8; $j++) {
-                $bitIndex = $i * 8 + $j; // 计算固定索引
-                $bitArray[$bitIndex] = ($byte >> (7 - $j)) & 1;
-            }
-        }
-        return $bitArray;
-    }
-    /**
      * 将当前存储的二进制数据转换为 UUID 字符串
      * @return string UUID 字符串，格式为 xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
      */
-    public function toUuidString(int $shiftAmount = 71, int $mapCount = 2): string
+    public function toUuidString(): string
     {
-        $data = $this->buffer;
-        for ($i = 0; $i < $mapCount; $i++) {
-            var_dump(bin2hex($data));
-            $data = $this->bitShuffle($data); // 位重排
-            var_dump(bin2hex($data));
-            $data = $this->shift128Bits($data, $shiftAmount); // 位移
-            var_dump(bin2hex($data));
-            $data = $this->cipherEncrypt($data); // 加密
-            var_dump(bin2hex($data));
-        }
-
-        $hexData = '';
-        for ($i = 0; $i < self::UUID_LENGTH; $i++) {
-            $hexData .= str_pad(dechex(ord($data[$i])), 2, '0', STR_PAD_LEFT);
-        }
-        return substr($hexData, 0, 8) . '-' . substr($hexData, 8, 4) . '-' . substr($hexData, 12, 4) . '-' . substr($hexData, 16, 4) . '-' . substr($hexData, 20);
+        $hexData = openssl_encrypt($this->buffer, $this->cipher, $this->key, OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING);
+        
+        $uuidString = bin2hex($hexData);
+        
+        return substr($uuidString, 0, 8) . '-' . substr($uuidString, 8, 4) . '-' . substr($uuidString, 12, 4) . '-' . substr($uuidString, 16, 4) . '-' . substr($uuidString, 20);
     }
 
     /**
      * 从 UUID 字符串中恢复数据
      */
-    public static function fromUuidString(int $key, string $uuidString, int $shiftAmount = 71, int $mapCount = 2): self
+    public static function fromUuidString(int $key, string $uuidString): self
     {
         $instance = new uuid($key);
-        $instance->parseUuidString($uuidString, $shiftAmount, $mapCount);
+        $instance->parseUuidString($uuidString);
         return $instance;
     }
     
-    private function parseUuidString(string $uuidString, int $shiftAmount = 71, int $mapCount = 2): void
+    private function parseUuidString(string $uuidString): void
     {
-        $cleanedUuid = str_replace('-', '', $uuidString);
-
-        if (strlen($cleanedUuid) !== 32) {
-            throw new InvalidArgumentException("Invalid UUID string length. Expected 32 hexadecimal characters.");
+        $uuidString = str_replace('-', '', $uuidString); // 去掉连字符
+        if (strlen($uuidString) !== 32) {
+            throw new InvalidArgumentException("UUID string must be exactly 32 characters long.");
         }
+        $hexData = hex2bin($uuidString);
+        $this->buffer = openssl_decrypt($hexData, $this->cipher, $this->key, OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING);
 
-        $data = hex2bin($cleanedUuid);
-        for ($i = $mapCount - 1; $i >= 0; $i--) {
-            $data = $this->cipherDecrypt($data);
-            $data = $this->shift128Bits($data, -$shiftAmount);
-            $data = $this->bitUnshuffle($data);
+        if ($this->buffer === false) {
+            throw new InvalidArgumentException("Failed to decrypt UUID string.");
         }
-        $this->currentOffset = 0;
-        $this->buffer = $data;
-    }
-
-    /**
-     * 循环位移
-     */
-    private function shift128Bits(string $data, int $shiftAmount): string
-    {
-        if (strlen($data) !== self::UUID_LENGTH) {
-            throw new InvalidArgumentException("Input data length must be exactly " . self::UUID_LENGTH . " bytes.");
-        }
-
-        $shiftAmount = $shiftAmount % 128;
-        if ($shiftAmount < 0) {
-            $shiftAmount += 128;
-        }
-
-        // Convert data to an array of integers
-        $bytes = [];
-        for ($i = 0; $i < self::UUID_LENGTH; $i++) {
-            $bytes[] = ord($data[$i]);
-        }
-
-        // Perform the circular shift
-        $shiftBytes = intdiv($shiftAmount, 8);
-        $shiftBits = $shiftAmount % 8;
-
-        $shiftedBytes = [];
-        for ($i = 0; $i < self::UUID_LENGTH; $i++) {
-            $currentByte = $bytes[($i + $shiftBytes) % self::UUID_LENGTH];
-            $nextByte = $bytes[($i + $shiftBytes + 1) % self::UUID_LENGTH];
-
-            $shiftedBytes[] = (($currentByte << $shiftBits) | ($nextByte >> (8 - $shiftBits))) & 0xFF;
-        }
-
-        // Convert back to string
-        return implode('', array_map('chr', $shiftedBytes));
+        $this->currentOffset = 0; // 重置偏移量
     }
 }
